@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>75 HARD · Groupe</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+/* ── RESET ───────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+button{cursor:pointer;font-family:'DM Sans',sans-serif}
+input{font-family:'DM Sans',sans-serif}
+img{display:block;max-width:100%}
+
+/* ── TOKENS ─────────────────────────────────────────────── */
+:root{
+  --bg:#09090c;--bg2:#111116;--bg3:#18181f;--bg4:#1e1e27;
+  --border:#222230;--border2:#2a2a3a;
+  --text:#edebe3;--muted:#50505e;--muted2:#2c2c38;
+  --fire:#ff4400;--fire2:#ff8800;
+  --gold:#f5c200;
+  --green:#00e676;--green2:#00b85a;
+  --blue:#3d8bff;
+  --tab-h:54px;
+}
+
+/* ── BASE ────────────────────────────────────────────────── */
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:520px;margin:0 auto;padding-bottom:32px;min-height:100vh}
+
+/* ── LOADING ─────────────────────────────────────────────── */
+.loading{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:20px;background:var(--bg);
+}
+.loading-logo{
+  font-family:'Bebas Neue';font-size:4rem;letter-spacing:10px;
+  background:linear-gradient(135deg,var(--fire),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.spinner{
+  width:28px;height:28px;border:3px solid var(--border2);
+  border-top-color:var(--fire);border-radius:50%;
+  animation:spin .75s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SETUP SCREEN ────────────────────────────────────────── */
+.setup{padding:28px 20px 40px;max-width:520px;margin:0 auto}
+.setup h1{
+  font-family:'Bebas Neue';font-size:2.8rem;letter-spacing:6px;margin-bottom:4px;
+}
+.setup h1 span{background:linear-gradient(135deg,var(--fire),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.setup p{font-size:.85rem;color:var(--muted);line-height:1.7;margin-bottom:20px}
+.setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px}
+.setup-card h3{font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--fire);margin-bottom:10px;font-weight:700}
+.setup-card p{font-size:.82rem;color:#aaa;line-height:1.65}
+.setup-card pre{
+  font-size:.74rem;background:var(--bg3);border-radius:8px;padding:13px;
+  overflow-x:auto;line-height:1.65;color:#ccc;margin-top:10px;
+  border:1px solid var(--border);white-space:pre-wrap;word-break:break-all;
+}
+.setup-card code{color:var(--gold);background:rgba(245,194,0,.1);padding:1px 4px;border-radius:3px;font-size:.8rem}
+
+/* ── IDENTITY ────────────────────────────────────────────── */
+.identity{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;
+  background:radial-gradient(ellipse at 50% -10%,rgba(255,68,0,.12) 0%,transparent 65%),var(--bg);
+}
+.id-logo{
+  font-family:'Bebas Neue';font-size:5.5rem;letter-spacing:12px;line-height:1;
+  background:linear-gradient(135deg,var(--fire),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.id-sub{
+  font-size:.68rem;letter-spacing:4px;text-transform:uppercase;color:var(--muted);
+  margin-top:4px;margin-bottom:40px;font-weight:700;
+}
+.id-section-lbl{
+  font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);
+  font-weight:700;margin-bottom:10px;align-self:flex-start;width:100%;max-width:380px;
+}
+.id-players{width:100%;max-width:380px;margin-bottom:8px}
+.pick-btn{
+  width:100%;display:flex;align-items:center;gap:14px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:15px 16px;transition:border-color .2s;color:var(--text);text-align:left;
+  margin-bottom:8px;border-style:solid;
+}
+.pick-btn:hover{border-color:var(--fire)}
+.pick-btn .pe{font-size:1.8rem;flex-shrink:0}
+.pick-btn .pn{font-size:.95rem;font-weight:700}
+.pick-btn .ps{font-size:.72rem;color:var(--muted);margin-top:2px}
+.id-or{
+  font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--border2);
+  margin:12px 0;width:100%;max-width:380px;text-align:center;font-weight:700;
+}
+.new-form{width:100%;max-width:380px}
+.emoji-strip{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.e-btn{
+  width:36px;height:36px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:9px;font-size:1.05rem;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.e-btn.on{border-color:var(--fire);background:rgba(255,68,0,.12);transform:scale(1.08)}
+.row{display:flex;gap:8px}
+.inp{
+  flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;
+  padding:12px 14px;color:var(--text);font-size:.9rem;outline:none;transition:border-color .2s;
+}
+.inp:focus{border-color:var(--fire)}
+.inp::placeholder{color:var(--muted)}
+.btn-fire{
+  padding:12px 20px;background:linear-gradient(135deg,var(--fire),var(--fire2));
+  border:none;border-radius:10px;color:#fff;font-weight:800;font-size:.9rem;
+  white-space:nowrap;transition:opacity .2s,transform .15s;
+}
+.btn-fire:hover{opacity:.92}
+.btn-fire:active{transform:scale(.97)}
+
+/* ── HEADER ─────────────────────────────────────────────── */
+.hdr{
+  padding:18px 18px 14px;
+  background:linear-gradient(180deg,rgba(255,68,0,.07) 0%,transparent 100%);
+}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.hdr-logo{font-family:'Bebas Neue';font-size:2rem;letter-spacing:5px}
+.hdr-logo span{background:linear-gradient(135deg,var(--fire),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.live-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.6rem;font-weight:700;color:var(--green);letter-spacing:1px;
+}
+.live-dot{
+  width:5px;height:5px;border-radius:50%;background:var(--green);
+  animation:livep 1.6s ease-in-out infinite;
+}
+@keyframes livep{0%,100%{opacity:1}50%{opacity:.2}}
+.avatar-btn{
+  width:34px;height:34px;border-radius:50%;background:var(--bg3);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;transition:border-color .2s;
+}
+.avatar-btn:hover{border-color:var(--fire)}
+.me-name{font-size:.78rem;font-weight:700;color:var(--muted)}
+
+/* Day progress bar */
+.day-bar{
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:14px 16px;
+}
+.day-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+.day-lbl{font-family:'Bebas Neue';font-size:1.6rem;letter-spacing:3px}
+.day-lbl .d{background:linear-gradient(135deg,var(--fire),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.day-pct{font-size:.7rem;color:var(--muted);font-weight:700;letter-spacing:1px}
+.prog-track{background:var(--bg3);border-radius:6px;height:6px;overflow:hidden}
+.prog-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--fire),var(--gold));transition:width .6s ease}
+
+/* ── TABS ────────────────────────────────────────────────── */
+.tabs{
+  display:flex;position:sticky;top:0;z-index:100;
+  background:rgba(9,9,12,.93);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--border);
+}
+.tab{
+  flex:1;height:var(--tab-h);background:none;
+  border:none;border-bottom:2px solid transparent;
+  color:var(--muted);font-size:.66rem;font-weight:700;letter-spacing:.5px;
+  text-transform:uppercase;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+}
+.tab .ti{font-size:.95rem}
+.tab.on{color:var(--fire);border-bottom-color:var(--fire)}
+
+/* ── PANEL ────────────────────────────────────────────────── */
+.panel{padding:14px 16px}
+.sect{
+  font-size:.6rem;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--muted);font-weight:700;margin:20px 0 9px;
+}
+.sect:first-child{margin-top:6px}
+
+/* ── CHECK ITEMS ─────────────────────────────────────────── */
+.ci{
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:14px 15px;margin-bottom:8px;transition:border-color .2s;
+}
+.ci.ok{border-color:rgba(0,230,118,.22);background:rgba(0,230,118,.04)}
+.ci.locked{opacity:.65;pointer-events:none}
+.ci-row{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.ci-check{
+  width:28px;height:28px;border-radius:50%;border:2px solid var(--muted2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:.85rem;background:var(--bg);transition:all .2s;
+}
+.ci.ok .ci-check{background:var(--green);border-color:var(--green);color:#000}
+.ci-body{flex:1;min-width:0}
+.ci-title{font-size:.9rem;font-weight:700}
+.ci-sub{font-size:.71rem;color:var(--muted);margin-top:2px}
+.ci.ok .ci-title{color:var(--green)}
+.ci-extras{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+
+/* Sport type pills */
+.sport-pills{display:flex;gap:5px;flex-wrap:wrap}
+.sp-pill{
+  padding:5px 11px;border-radius:20px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--muted);font-size:.73rem;font-weight:700;
+  transition:all .15s;
+}
+.sp-pill.on{background:var(--fire);border-color:var(--fire);color:#fff}
+.sp-pill-label{font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:7px}
+
+/* Water */
+.water-top{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.water-num{
+  font-family:'Bebas Neue';font-size:2.2rem;line-height:1;
+  color:var(--blue);letter-spacing:2px;
+}
+.water-unit{font-size:1rem;color:var(--blue);font-family:'Bebas Neue'}
+.water-goal-lbl{font-size:.72rem;font-weight:700}
+.water-goal-lbl.ok{color:var(--green)}
+.water-goal-lbl.nok{color:var(--muted)}
+.water-segs{display:flex;gap:3px;margin-bottom:10px}
+.wseg{
+  flex:1;height:7px;border-radius:4px;background:var(--bg3);
+  transition:background .25s;
+}
+.wseg.fill{background:var(--blue)}
+.wseg.over{background:var(--green)}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;border-radius:3px;
+  background:var(--bg3);outline:none;cursor:pointer;transition:background .1s;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--blue);border:3px solid var(--bg2);cursor:pointer;
+  box-shadow:0 1px 6px rgba(61,139,255,.4);
+}
+.water-ticks{display:flex;justify-content:space-between;font-size:.6rem;color:var(--muted);margin-top:4px}
+.water-ticks .goal-tick{color:var(--green);font-weight:700}
+
+/* Book input */
+.book-inp-row{display:flex;gap:7px;align-items:center}
+.book-inp-row .inp{padding:9px 12px;font-size:.82rem}
+
+/* Photo upload */
+.photo-upload{
+  border:1px dashed var(--border2);border-radius:12px;padding:22px;
+  text-align:center;cursor:pointer;transition:border-color .2s;
+}
+.photo-upload:hover{border-color:var(--fire)}
+.photo-upload .pu-icon{font-size:2.2rem;margin-bottom:6px}
+.photo-upload .pu-hint{font-size:.75rem;color:var(--muted)}
+.photo-preview-wrap{position:relative}
+.photo-preview{width:100%;max-height:240px;object-fit:cover;border-radius:10px;cursor:pointer}
+.photo-change-btn{
+  position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);
+  border:none;color:#fff;border-radius:7px;padding:5px 9px;font-size:.73rem;
+}
+
+/* Validate button */
+.val-btn{
+  width:100%;margin-top:16px;padding:18px;
+  background:linear-gradient(135deg,var(--fire),var(--fire2));
+  border:none;border-radius:16px;color:#fff;
+  font-family:'Bebas Neue';font-size:1.4rem;letter-spacing:4px;
+  transition:all .2s;box-shadow:0 4px 24px rgba(255,68,0,.2);
+}
+.val-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 30px rgba(255,68,0,.3)}
+.val-btn:disabled{opacity:.22;cursor:not-allowed;transform:none!important;box-shadow:none}
+.val-btn.validated{
+  background:linear-gradient(135deg,#006b38,var(--green));
+  box-shadow:0 4px 20px rgba(0,230,118,.18);cursor:default;
+}
+
+/* ── LEADERBOARD ─────────────────────────────────────────── */
+.lb-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;
+}
+.lb-card.me{border-color:rgba(245,194,0,.3);background:rgba(245,194,0,.025)}
+.lb-card.top{border-color:rgba(255,68,0,.38)}
+.lb-rank{font-family:'Bebas Neue';font-size:1.6rem;width:30px;text-align:center;flex-shrink:0}
+.lb-body{flex:1;min-width:0}
+.lb-name{font-size:.92rem;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px}
+.tag-me{font-size:.55rem;background:var(--gold);color:#000;padding:2px 5px;border-radius:5px;font-weight:800;letter-spacing:.5px}
+.streak-badge{font-size:.72rem;font-weight:700;color:var(--fire)}
+.lb-sub{font-size:.7rem;color:var(--muted)}
+.lb-dots{display:flex;gap:3px;margin-top:7px;align-items:center;flex-wrap:wrap}
+.lb-dot{
+  width:11px;height:11px;border-radius:3px;
+  background:var(--bg3);border:1px solid var(--border2);
+  transition:background .3s;
+}
+.lb-dot.ok{background:var(--green);border-color:var(--green)}
+.lb-dot-lbl{font-size:.63rem;color:var(--muted);margin-left:5px}
+.lb-bar-wrap{background:var(--bg3);border-radius:3px;height:3px;margin-top:7px;overflow:hidden}
+.lb-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--fire),var(--gold));transition:width .6s}
+.lb-score{text-align:right;flex-shrink:0}
+.lb-score-n{font-family:'Bebas Neue';font-size:1.8rem;line-height:1;color:var(--fire)}
+.lb-score-l{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+
+/* Mini calendar */
+.cal-mini{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}
+.cal-cell{
+  aspect-ratio:1;border-radius:4px;background:var(--bg3);border:1px solid var(--border);
+  font-size:.46rem;display:flex;align-items:center;justify-content:center;
+  color:var(--muted2);font-weight:700;
+}
+.cal-cell.ok{background:var(--green);border-color:var(--green);color:#000}
+.cal-cell.part{background:var(--gold);border-color:var(--gold);color:#000}
+.cal-cell.now{border-color:var(--fire);color:var(--fire)}
+.cal-cell.fut{opacity:.14}
+
+/* ── CHARTS ──────────────────────────────────────────────── */
+.chart-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:16px 15px;margin-bottom:14px;
+}
+.chart-card-title{
+  font-size:.65rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;
+}
+.chart-wrap{position:relative;height:185px}
+
+/* Player tabs for graphs */
+.p-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.p-tab{
+  padding:7px 13px;border-radius:20px;border:1px solid var(--border);
+  background:var(--bg2);color:var(--muted);font-size:.76rem;font-weight:700;
+  transition:all .15s;
+}
+.p-tab.on{background:var(--fire);border-color:var(--fire);color:#fff}
+
+/* Sport summary per person */
+.sport-person-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:14px;margin-bottom:10px;
+}
+.sport-person-title{font-size:.8rem;font-weight:800;margin-bottom:10px}
+.sport-row{
+  display:flex;align-items:center;gap:10px;padding:5px 0;
+  border-bottom:1px solid var(--border);
+}
+.sport-row:last-child{border-bottom:none}
+.sport-row-e{font-size:1.1rem;width:24px;text-align:center;flex-shrink:0}
+.sport-row-n{font-size:.82rem;font-weight:700;flex:1}
+.sport-row-c{font-family:'Bebas Neue';font-size:1.3rem;line-height:1;color:var(--fire)}
+.sport-row-l{font-size:.65rem;color:var(--muted)}
+.sport-row-bar{
+  height:4px;border-radius:2px;background:var(--bg3);margin-top:4px;overflow:hidden;
+}
+.sport-row-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--fire),var(--gold))}
+
+/* ── JOURNAL / PHOTOS ────────────────────────────────────── */
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.photo-thumb-wrap{position:relative}
+.photo-thumb{
+  width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;
+  cursor:pointer;transition:transform .15s;
+}
+.photo-thumb:active{transform:scale(.97)}
+.photo-thumb-label{
+  font-size:.62rem;color:var(--muted);text-align:center;margin-top:4px;
+}
+.photo-filter-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.no-content{
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:24px;text-align:center;
+}
+.no-content .nc-icon{font-size:2.2rem;margin-bottom:8px}
+.no-content .nc-text{font-size:.83rem;color:var(--muted);line-height:1.5}
+
+/* Books */
+.book-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:13px;
+  padding:13px 14px;margin-bottom:7px;display:flex;align-items:center;gap:12px;
+}
+.book-icon-big{font-size:1.5rem;flex-shrink:0}
+.book-info{flex:1;min-width:0}
+.book-title{font-size:.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book-meta{font-size:.7rem;color:var(--muted);margin-top:2px}
+.book-status{font-size:.65rem;padding:3px 8px;border-radius:10px;font-weight:700;flex-shrink:0}
+.book-status.reading{background:rgba(61,139,255,.12);color:var(--blue);border:1px solid rgba(61,139,255,.2)}
+.book-status.done{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+.book-finish-btn{
+  font-size:.65rem;color:var(--muted);background:none;border:1px solid var(--border);
+  padding:4px 8px;border-radius:7px;transition:all .15s;margin-top:4px;
+}
+.book-finish-btn:hover{border-color:var(--green);color:var(--green)}
+
+/* ── LIGHTBOX ────────────────────────────────────────────── */
+.lightbox{
+  position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;
+}
+.lightbox img{max-width:100%;max-height:78vh;border-radius:10px;object-fit:contain}
+.lb-close{
+  position:absolute;top:18px;right:18px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.15);color:#fff;font-size:1.1rem;
+  border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+}
+.lb-info{margin-top:12px;font-size:.8rem;color:#888;text-align:center}
+
+/* ── MODAL (settings) ────────────────────────────────────── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;
+  display:none;backdrop-filter:blur(4px);
+}
+.overlay.open{display:block}
+.modal{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:520px;background:var(--bg2);
+  border-radius:20px 20px 0 0;padding:22px 18px 32px;z-index:201;
+  border-top:1px solid var(--border);max-height:82vh;overflow-y:auto;
+  display:none;
+}
+.modal.open{display:block}
+.modal-title{font-family:'Bebas Neue';font-size:1.6rem;letter-spacing:3px;margin-bottom:16px}
+.profile-row{
+  display:flex;align-items:center;gap:12px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:7px;
+}
+.profile-row.me-row{border-color:rgba(245,194,0,.3)}
+.profile-emoji-big{font-size:1.6rem;flex-shrink:0}
+.profile-name{font-size:.92rem;font-weight:700;display:flex;align-items:center;gap:6px}
+.profile-score{font-size:.7rem;color:var(--muted)}
+
+/* ── QUOTE ───────────────────────────────────────────────── */
+.quote-block{
+  background:var(--bg2);border-left:3px solid var(--fire);
+  border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:6px;
+}
+.quote-text{font-size:.84rem;font-style:italic;color:#bbb;line-height:1.55}
+.quote-author{font-size:.68rem;color:var(--fire);font-weight:700;margin-top:5px}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:22px;left:50%;
+  transform:translateX(-50%) translateY(100px);
+  background:var(--green);color:#000;padding:12px 22px;
+  border-radius:28px;font-weight:800;font-size:.88rem;
+  z-index:9999;white-space:nowrap;pointer-events:none;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── UTILS ───────────────────────────────────────────────── */
+::-webkit-scrollbar{width:0}
+.mt4{margin-top:4px}
+.mt8{margin-top:8px}
+.mt12{margin-top:12px}
+.flex{display:flex}
+.gap6{gap:6px}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="loading">
+    <div class="loading-logo">75 HARD</div>
+    <div class="spinner"></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<div id="overlay" class="overlay"></div>
+<div id="modal" class="modal"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   🔧  CONFIGURATION — modifier cette section avant de déployer
+   ════════════════════════════════════════════════════════════ */
+// const FB = {
+//   apiKey:            "AIzaSyCOEtGPFOkKJAHp8-yApr0ClQzaUh1ZTm8",
+//   authDomain:        "hard-a7b54.firebaseapp.com",
+//   databaseURL:       "https://REMPLACER-default-rtdb.europe-west1.firebasedatabase.app",
+//   projectId:         "hard-a7b54",
+//   storageBucket:     "hard-a7b54.firebasestorage.app",
+//   messagingSenderId: "1097726994595",
+//   appId:             "1:1097726994595:web:acf73814ff21dd5aab7716"
+// };
+
+const FB = {
+  apiKey: "AIzaSyCOEtGPFOkKJAHp8-yApr0ClQzaUh1ZTm8",
+  authDomain: "hard-a7b54.firebaseapp.com",
+  projectId: "hard-a7b54",
+  storageBucket: "hard-a7b54.firebasestorage.app",
+  messagingSenderId: "1097726994595",
+  appId: "1:1097726994595:web:acf73814ff21dd5aab7716",
+  measurementId: "G-V6DYFNWS23"
+};
+
+const START_DATE = '2026-05-04';   // Lundi 4 mai 2026
+/* ════════════════════════════════════════════════════════════ */
+
+/* ── CONSTANTES ─────────────────────────────────────────── */
+const SPORT_TYPES = [
+  {id:'muscu',    e:'🏋️', n:'Muscu'},
+  {id:'course',   e:'🏃', n:'Course'},
+  {id:'velo',     e:'🚴', n:'Vélo'},
+  {id:'natation', e:'🏊', n:'Natation'},
+  {id:'yoga',     e:'🧘', n:'Yoga'},
+  {id:'hiit',     e:'⚡', n:'HIIT'},
+  {id:'marche',   e:'🚶', n:'Marche'},
+  {id:'autre',    e:'💪', n:'Autre'},
+];
+
+const EMOJIS = ['🔥','💪','⚡','🦁','🐺','🏔️','🎯','👊','🚀','🌊','🐉','☄️'];
+
+const QUOTES = [
+  ['La discipline est le pont entre tes objectifs et ton succès.','Jim Rohn'],
+  ['Souffre maintenant et vis en champion.','Muhammad Ali'],
+  ['Chaque rep compte. Chaque page. Chaque jour.',null],
+  ['Ce n\'est pas dans le confort qu\'on se découvre.',null],
+  ['Le succès n\'est pas final — c\'est le courage de continuer qui compte.','Churchill'],
+  ['75 jours pour changer ta vie.',null],
+  ['Ton futur moi te remerciera.',null],
+  ['La douleur est temporaire. La fierté est permanente.',null],
+  ['Sois la version de toi que tu veux être dans 75 jours.',null],
+];
+
+const COLORS = ['#ff4400','#3d8bff','#00e676','#f5c200','#ff44aa'];
+const ME_KEY = '75h_myid_v4';
+const EMO_KEY = '75h_emo_v1';
+
+/* ── FIREBASE ────────────────────────────────────────────── */
+const isConfigured = FB.apiKey !== 'REMPLACER';
+let db, playersRef;
+
+if (isConfigured) {
+  firebase.initializeApp(FB);
+  db = firebase.database();
+  playersRef = db.ref('players');
+}
+
+/* ── STATE ───────────────────────────────────────────────── */
+const S = {
+  players: {},
+  myId: null,
+  tab: 'today',
+  selEmoji: localStorage.getItem(EMO_KEY) || '🔥',
+  selStatsPlayer: null,
+  charts: {},
+  photosCache: [],
+  waterDebounce: null,
+  dayNum: 1,
+};
+
+/* ── HELPERS ─────────────────────────────────────────────── */
+function ds(d){ return (d||new Date()).toISOString().split('T')[0] }
+
+function getDayNum(){
+  const diff = Math.floor((Date.now() - new Date(START_DATE).getTime()) / 86400000);
+  return Math.min(Math.max(diff+1,1),75);
+}
+
+function getScore(p){
+  return Object.values(p.days||{}).filter(d=>d.validated).length;
+}
+
+function getStreak(p){
+  let s=0;
+  for(let i=S.dayNum-2;i>=0;i--){
+    const d=new Date(START_DATE);d.setDate(d.getDate()+i);
+    if((p.days||{})[ds(d)]?.validated) s++;
+    else break;
+  }
+  return s;
+}
+
+function getDayCompletion(p, dateKey){
+  const dd = (p.days||{})[dateKey]||{};
+  if(dd.validated) return 7;
+  let c=0;
+  if(dd.diet) c++;
+  if(dd.sport1?.done) c++;
+  if(dd.sport2?.done) c++;
+  if((dd.water||0)>=3) c++;
+  if(dd.read?.done) c++;
+  if(dd.photo) c++;
+  if(dd.meditate) c++;
+  return c;
+}
+
+function myDayRef(){ return db.ref(`players/${S.myId}/days/${ds()}`) }
+
+async function setField(field, val){
+  if(!S.myId) return;
+  await myDayRef().child(field).set(val);
+}
+
+async function compressImage(file, maxPx=600, q=0.72){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        let w=img.width,h=img.height;
+        if(w>maxPx||h>maxPx){
+          if(w>h){h=h*maxPx/w;w=maxPx;}
+          else{w=w*maxPx/h;h=maxPx;}
+        }
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',q));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function toast(msg,bg='#00e676',col='#000'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.background=bg;t.style.color=col;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+function destroyCharts(){
+  Object.values(S.charts).forEach(c=>c&&c.destroy());
+  S.charts={};
+}
+
+/* ── INIT ────────────────────────────────────────────────── */
+async function init(){
+  S.dayNum=getDayNum();
+
+  if(!isConfigured){
+    renderSetup();
+    return;
+  }
+
+  S.myId=localStorage.getItem(ME_KEY);
+
+  // Ensure start date config
+  await db.ref('config/startDate').once('value').then(snap=>{
+    if(!snap.exists()) db.ref('config/startDate').set(START_DATE);
+  });
+
+  // Real-time listener
+  playersRef.on('value', snap=>{
+    S.players=snap.val()||{};
+    if(!S.selStatsPlayer) S.selStatsPlayer=S.myId;
+    renderApp();
+  });
+}
+
+/* ── SETUP SCREEN ────────────────────────────────────────── */
+function renderSetup(){
+  document.getElementById('app').innerHTML=`
+  <div class="setup">
+    <h1><span>75</span> HARD · Setup</h1>
+    <p>Cette appli utilise Firebase pour synchroniser les données du groupe en temps réel. Suis ces étapes (~10 min), c'est tout ce qu'il faut faire.</p>
+
+    <div class="setup-card">
+      <h3>1 · Créer un projet Firebase (gratuit)</h3>
+      <p>→ <strong>console.firebase.google.com</strong><br>
+      → "Add project" → donne un nom → Continue<br>
+      → Build → <strong>Realtime Database</strong> → "Create Database"<br>
+      → Choisir une région (Europe OK) → <strong>Mode Test</strong> → Done</p>
+    </div>
+
+    <div class="setup-card">
+      <h3>2 · Récupérer ta config</h3>
+      <p>→ Project Settings ⚙ (en haut à gauche)<br>
+      → Scroll → "Your apps" → <strong>Add app → Web</strong><br>
+      → Enregistre l'app → copie le bloc <code>firebaseConfig</code></p>
+    </div>
+
+    <div class="setup-card">
+      <h3>3 · Coller dans ce fichier (index.html)</h3>
+      <pre>const FB = {
+  apiKey:            "ta_clé_ici",
+  authDomain:        "ton-projet.firebaseapp.com",
+  databaseURL:       "https://ton-projet-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "ton-projet",
+  storageBucket:     "ton-projet.appspot.com",
+  messagingSenderId: "123456789",
+  appId:             "1:123:web:abc"
+};</pre>
+    </div>
+
+    <div class="setup-card">
+      <h3>4 · Héberger sur GitHub Pages (gratuit)</h3>
+      <pre>git init
+git add index.html
+git commit -m "75 hard tracker"
+git branch -M main
+git remote add origin https://github.com/TON_USER/75hard.git
+git push -u origin main</pre>
+      <p style="margin-top:10px">→ GitHub repo → <strong>Settings → Pages → Branch: main → Save</strong><br>
+      → URL type : <code>https://ton_user.github.io/75hard</code><br>
+      → Envoie ce lien à tes amis — c'est tout ! 🔥</p>
+    </div>
+  </div>`;
+}
+
+/* ── APP SHELL ───────────────────────────────────────────── */
+function renderApp(){
+  const app=document.getElementById('app');
+
+  if(!S.myId||!S.players[S.myId]){
+    renderIdentity(app);
+    return;
+  }
+
+  const me=S.players[S.myId];
+  const day=S.dayNum;
+  const pct=Math.max(((day-1)/75*100),1).toFixed(1);
+
+  app.innerHTML=`
+  <div class="app">
+    <div class="hdr">
+      <div class="hdr-top">
+        <div class="hdr-logo"><span>75</span> HARD</div>
+        <div class="hdr-right">
+          <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+          <button class="avatar-btn" onclick="openSettings()" title="Changer de profil">${me.emoji}</button>
+          <span class="me-name">${me.name}</span>
+        </div>
+      </div>
+      <div class="day-bar">
+        <div class="day-meta">
+          <div class="day-lbl">JOUR <span class="d">${day}</span> / 75</div>
+          <div class="day-pct">${pct}% accompli</div>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab ${S.tab==='today'?'on':''}" onclick="switchTab('today')">
+        <span class="ti">📋</span>Aujourd'hui
+      </button>
+      <button class="tab ${S.tab==='lb'?'on':''}" onclick="switchTab('lb')">
+        <span class="ti">🏆</span>Classement
+      </button>
+      <button class="tab ${S.tab==='graphs'?'on':''}" onclick="switchTab('graphs')">
+        <span class="ti">📊</span>Graphiques
+      </button>
+      <button class="tab ${S.tab==='journal'?'on':''}" onclick="switchTab('journal')">
+        <span class="ti">📚</span>Journal
+      </button>
+    </div>
+
+    <div id="tab-content"></div>
+  </div>`;
+
+  destroyCharts();
+  renderTab();
+}
+
+function switchTab(tab){
+  S.tab=tab;
+  destroyCharts();
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    b.classList.toggle('on',['today','lb','graphs','journal'][i]===tab);
+  });
+  renderTab();
+}
+
+function renderTab(){
+  const c=document.getElementById('tab-content');
+  if(!c) return;
+  switch(S.tab){
+    case 'today':   renderToday(c); break;
+    case 'lb':      renderLeaderboard(c); break;
+    case 'graphs':  renderGraphs(c); break;
+    case 'journal': renderJournal(c); break;
+  }
+}
+
+/* ── IDENTITY ────────────────────────────────────────────── */
+function renderIdentity(app){
+  const players=Object.entries(S.players);
+  let html=`<div class="identity">
+    <div class="id-logo">75 HARD</div>
+    <div class="id-sub">Défi de groupe · Qui es-tu ?</div>`;
+
+  if(players.length){
+    html+=`<div class="id-section-lbl">Rejoindre le groupe</div>
+    <div class="id-players">`;
+    players.forEach(([id,p])=>{
+      html+=`<button class="pick-btn" onclick="pickPlayer('${id}')">
+        <div class="pe">${p.emoji}</div>
+        <div><div class="pn">${p.name}</div><div class="ps">${getScore(p)} jours validés</div></div>
+      </button>`;
+    });
+    html+=`</div><div class="id-or">— ou créer un profil —</div>`;
+  } else {
+    html+=`<div class="id-section-lbl">Lance le défi</div>`;
+  }
+
+  html+=`<div class="new-form">
+    <div class="emoji-strip" id="id-emo">${EMOJIS.map(e=>`<button class="e-btn${S.selEmoji===e?' on':''}" onclick="setEmoji('${e}')">${e}</button>`).join('')}</div>
+    <div class="row">
+      <input class="inp" id="id-name" placeholder="Ton prénom..." maxlength="14" onkeydown="if(event.key==='Enter')createPlayer()"/>
+      <button class="btn-fire" onclick="createPlayer()">Rejoindre 🔥</button>
+    </div>
+  </div></div>`;
+
+  app.innerHTML=html;
+}
+
+function setEmoji(e){
+  S.selEmoji=e;localStorage.setItem(EMO_KEY,e);
+  document.querySelectorAll('.e-btn').forEach(b=>b.classList.toggle('on',b.textContent===e));
+}
+
+async function pickPlayer(id){
+  S.myId=id;localStorage.setItem(ME_KEY,id);
+  S.selStatsPlayer=id;
+  renderApp();
+}
+
+async function createPlayer(){
+  const name=(document.getElementById('id-name')?.value||'').trim();
+  if(!name) return;
+  const id='p'+Date.now();
+  await playersRef.child(id).set({name,emoji:S.selEmoji,days:{},books:{}});
+  S.myId=id;localStorage.setItem(ME_KEY,id);
+  S.selStatsPlayer=id;
+  toast('👊 '+name+' a rejoint le défi !');
+}
+
+/* ── TODAY ───────────────────────────────────────────────── */
+function renderToday(c){
+  const me=S.players[S.myId];
+  const todayKey=ds();
+  const dd=(me.days||{})[todayKey]||{};
+  const s1=dd.sport1||{};
+  const s2=dd.sport2||{};
+  const rd=dd.read||{};
+  const wL=dd.water||0;
+  const validated=!!dd.validated;
+  const dayN=S.dayNum;
+  const q=QUOTES[dayN%QUOTES.length];
+
+  let cnt=0;
+  if(dd.diet) cnt++;
+  if(s1.done) cnt++;
+  if(s2.done) cnt++;
+  if(wL>=3) cnt++;
+  if(rd.done) cnt++;
+  if(dd.photo) cnt++;
+  if(dd.meditate) cnt++;
+  const allDone=cnt===7;
+
+  // Water segments (16 = 0.25 steps up to 4L)
+  const segs=Array.from({length:16},(_,i)=>{
+    const l=(i+1)*0.25;
+    let cls='wseg';
+    if(l<=wL) cls+=l<=3?' fill':' over';
+    return `<div class="${cls}" id="ws-${i}"></div>`;
+  }).join('');
+
+  const wPct=(wL/4*100).toFixed(0);
+  const sliderBg=`linear-gradient(to right,var(--blue) ${wPct}%,var(--bg3) ${wPct}%)`;
+
+  c.innerHTML=`<div class="panel">
+    <!-- Quote -->
+    <div class="quote-block">
+      <div class="quote-text">"${q[0]}"</div>
+      ${q[1]?`<div class="quote-author">— ${q[1]}</div>`:''}
+    </div>
+
+    <div class="sect">Mes défis — ${cnt}/7${validated?' · ✅ Journée validée !':''}</div>
+
+    <!-- DIET -->
+    <div class="ci${dd.diet?' ok':''}${validated?' locked':''}">
+      <div class="ci-row" onclick="${!validated?'toggleField(\"diet\")':''}">
+        <div class="ci-check">${dd.diet?'✓':''}</div>
+        <div class="ci-body"><div class="ci-title">🥗 Régime strict</div><div class="ci-sub">Pas de fast food · Zéro alcool</div></div>
+      </div>
+    </div>
+
+    <!-- SPORT 1 -->
+    <div class="ci${s1.done?' ok':''}${validated?' locked':''}">
+      <div class="ci-row" onclick="${!validated?'toggleSport(1)':''}">
+        <div class="ci-check">${s1.done?'✓':''}</div>
+        <div class="ci-body">
+          <div class="ci-title">🏋️ Sport #1${s1.type?` <span style="font-weight:400;color:var(--muted)">· ${SPORT_TYPES.find(x=>x.id===s1.type)?.e} ${SPORT_TYPES.find(x=>x.id===s1.type)?.n}</span>`:''}
+          </div>
+          <div class="ci-sub">45 min minimum</div>
+        </div>
+      </div>
+      ${s1.done&&!validated?`<div class="ci-extras">
+        <div class="sp-pill-label">Type de séance</div>
+        <div class="sport-pills">${SPORT_TYPES.map(st=>`<button class="sp-pill${s1.type===st.id?' on':''}" onclick="setSportType(1,'${st.id}')">${st.e} ${st.n}</button>`).join('')}</div>
+      </div>`:''}
+    </div>
+
+    <!-- SPORT 2 -->
+    <div class="ci${s2.done?' ok':''}${validated?' locked':''}">
+      <div class="ci-row" onclick="${!validated?'toggleSport(2)':''}">
+        <div class="ci-check">${s2.done?'✓':''}</div>
+        <div class="ci-body">
+          <div class="ci-title">🌿 Sport extérieur${s2.type?` <span style="font-weight:400;color:var(--muted)">· ${SPORT_TYPES.find(x=>x.id===s2.type)?.e} ${SPORT_TYPES.find(x=>x.id===s2.type)?.n}</span>`:''}
+          </div>
+          <div class="ci-sub">45 min dehors · peu importe la météo</div>
+        </div>
+      </div>
+      ${s2.done&&!validated?`<div class="ci-extras">
+        <div class="sp-pill-label">Type de séance outdoor</div>
+        <div class="sport-pills">${SPORT_TYPES.map(st=>`<button class="sp-pill${s2.type===st.id?' on':''}" onclick="setSportType(2,'${st.id}')">${st.e} ${st.n}</button>`).join('')}</div>
+      </div>`:''}
+    </div>
+
+    <!-- WATER -->
+    <div class="ci${wL>=3?' ok':''}${validated?' locked':''}">
+      <div class="ci-row" style="cursor:default;pointer-events:none">
+        <div class="ci-check" style="${wL>=3?'':'border-color:var(--blue)'}">
+          ${wL>=3?'✓':'💧'}
+        </div>
+        <div class="ci-body"><div class="ci-title">💧 Eau</div><div class="ci-sub">Objectif : 3 litres par jour</div></div>
+      </div>
+      <div class="ci-extras">
+        <div class="water-top">
+          <div class="water-num" id="w-num">${wL.toFixed(1)}</div>
+          <div class="water-unit">L</div>
+          <div class="water-goal-lbl ${wL>=3?'ok':'nok'}" id="w-goal">
+            ${wL>=3?'✅ Objectif atteint !':'Objectif : 3 L'}
+          </div>
+        </div>
+        <div class="water-segs" id="w-segs">${segs}</div>
+        ${!validated?`
+        <input type="range" id="w-slider" min="0" max="4" step="0.25" value="${wL}"
+          style="background:${sliderBg}"
+          oninput="updateWaterVisuals(parseFloat(this.value))"
+          onchange="commitWater(parseFloat(this.value))">
+        <div class="water-ticks">
+          <span>0 L</span><span class="goal-tick">▲ 3L</span><span>4 L</span>
+        </div>`:
+        ''}
+      </div>
+    </div>
+
+    <!-- LECTURE -->
+    <div class="ci${rd.done?' ok':''}${validated?' locked':''}">
+      <div class="ci-row" onclick="${!validated?'toggleRead()':''}">
+        <div class="ci-check">${rd.done?'✓':''}</div>
+        <div class="ci-body">
+          <div class="ci-title">📖 10 pages${rd.book?` <span style="font-weight:400;font-style:italic;color:var(--muted)">· ${escHtml(rd.book)}</span>`:''}</div>
+          <div class="ci-sub">Livre non-fictif</div>
+        </div>
+      </div>
+      ${rd.done&&!validated?`<div class="ci-extras">
+        <div class="book-inp-row">
+          <input class="inp" id="book-in" placeholder="Titre du livre lu..." value="${rd.book?escHtml(rd.book):''}"
+            onkeydown="if(event.key==='Enter')saveBook()" maxlength="60"/>
+          <button class="btn-fire" onclick="saveBook()" style="padding:9px 14px;font-size:.82rem">OK</button>
+        </div>
+      </div>`:''}
+    </div>
+
+    <!-- PHOTO -->
+    <div class="ci${dd.photo?' ok':''}${validated?' locked':''}">
+      <div class="ci-row" onclick="${!dd.photo&&!validated?'document.getElementById(\"photo-in\").click()':''}">
+        <div class="ci-check">${dd.photo?'✓':''}</div>
+        <div class="ci-body"><div class="ci-title">📸 Photo de progression</div><div class="ci-sub">1 photo · Jour ${dayN}</div></div>
+      </div>
+      ${!validated?`<div class="ci-extras">
+        <input type="file" id="photo-in" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+        ${dd.photo
+          ?`<div class="photo-preview-wrap">
+               <img src="${dd.photo}" class="photo-preview" onclick="openPhoto(0)" style="cursor:pointer"/>
+               <button class="photo-change-btn" onclick="document.getElementById('photo-in').click()">✎ Changer</button>
+             </div>`
+          :`<div class="photo-upload" onclick="document.getElementById('photo-in').click()">
+               <div class="pu-icon">📷</div>
+               <div class="pu-hint">Toucher pour prendre ou choisir une photo</div>
+             </div>`}
+      </div>`:''}
+    </div>
+
+    <!-- MEDITATION -->
+    <div class="ci${dd.meditate?' ok':''}${validated?' locked':''}">
+      <div class="ci-row" onclick="${!validated?'toggleField(\"meditate\")':''}">
+        <div class="ci-check">${dd.meditate?'✓':''}</div>
+        <div class="ci-body"><div class="ci-title">🧘 Méditation</div><div class="ci-sub">10 min · Pleine conscience</div></div>
+      </div>
+    </div>
+
+    ${validated
+      ?`<button class="val-btn validated" disabled>✅ JOURNÉE ${dayN} VALIDÉE !</button>`
+      :`<button class="val-btn" onclick="validateDay()" ${!allDone?'disabled':''}>
+          ${allDone?'VALIDER MA JOURNÉE 🔥':'VALIDER ('+cnt+'/7 DÉFIS)'}
+        </button>`}
+  </div>`;
+}
+
+/* Today actions */
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+async function toggleField(field){
+  const me=S.players[S.myId];
+  const cur=(me.days||{})[ds()]?.[field];
+  await setField(field,!cur);
+}
+
+async function toggleSport(num){
+  const me=S.players[S.myId];
+  const field='sport'+num;
+  const cur=(me.days||{})[ds()]?.[field]||{};
+  await setField(field,{...cur,done:!cur.done});
+}
+
+async function setSportType(num,type){
+  const me=S.players[S.myId];
+  const field='sport'+num;
+  const cur=(me.days||{})[ds()]?.[field]||{};
+  await setField(field,{...cur,type});
+}
+
+function updateWaterVisuals(l){
+  const numEl=document.getElementById('w-num');
+  const goalEl=document.getElementById('w-goal');
+  const slider=document.getElementById('w-slider');
+  if(numEl) numEl.textContent=l.toFixed(1);
+  if(goalEl){
+    goalEl.textContent=l>=3?'✅ Objectif atteint !':'Objectif : 3 L';
+    goalEl.className='water-goal-lbl '+(l>=3?'ok':'nok');
+  }
+  if(slider) slider.style.background=`linear-gradient(to right,var(--blue) ${(l/4*100).toFixed(0)}%,var(--bg3) ${(l/4*100).toFixed(0)}%)`;
+  document.querySelectorAll('.wseg').forEach((seg,i)=>{
+    const liter=(i+1)*0.25;
+    seg.className='wseg'+(liter<=l?(liter<=3?' fill':' over'):'');
+  });
+}
+
+async function commitWater(l){
+  await setField('water',l);
+}
+
+async function toggleRead(){
+  const me=S.players[S.myId];
+  const cur=(me.days||{})[ds()]?.read||{};
+  await setField('read',{...cur,done:!cur.done});
+}
+
+async function saveBook(){
+  const title=(document.getElementById('book-in')?.value||'').trim();
+  if(!title) return;
+  const me=S.players[S.myId];
+  const cur=(me.days||{})[ds()]?.read||{};
+  await setField('read',{...cur,book:title});
+  // Add to player's book log
+  const booksRef=db.ref(`players/${S.myId}/books`);
+  const snap=await booksRef.once('value');
+  const existing=Object.values(snap.val()||{}).find(b=>b.title===title);
+  if(!existing){
+    await booksRef.push({title,startDay:S.dayNum,endDay:null});
+  }
+  toast('📖 '+title+' enregistré !');
+}
+
+async function handlePhoto(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  toast('⏳ Compression en cours...');
+  const compressed=await compressImage(file);
+  await setField('photo',compressed);
+  toast('📸 Photo sauvegardée !');
+}
+
+async function validateDay(){
+  const me=S.players[S.myId];
+  const dd=(me.days||{})[ds()]||{};
+  let c=0;
+  if(dd.diet) c++;
+  if(dd.sport1?.done) c++;
+  if(dd.sport2?.done) c++;
+  if((dd.water||0)>=3) c++;
+  if(dd.read?.done) c++;
+  if(dd.photo) c++;
+  if(dd.meditate) c++;
+  if(c<7) return;
+  await myDayRef().update({validated:true});
+  toast('🔥 Journée '+S.dayNum+' validée ! Continue comme ça !');
+}
+
+/* ── LEADERBOARD ─────────────────────────────────────────── */
+function renderLeaderboard(c){
+  const sorted=Object.entries(S.players).sort(([,a],[,b])=>getScore(b)-getScore(a));
+  const maxSc=Math.max(...sorted.map(([,p])=>getScore(p)),1);
+  const todayKey=ds();
+  const me=S.players[S.myId];
+
+  let html=`<div class="panel">
+    <div class="sect">Classement — Jour ${S.dayNum}</div>`;
+
+  sorted.forEach(([id,p],i)=>{
+    const sc=getScore(p),st=getStreak(p),isMe=id===S.myId;
+    const medal=['🥇','🥈','🥉'][i]||(i+1)+'°';
+    const todayCnt=getDayCompletion(p,todayKey);
+    const todayD=(p.days||{})[todayKey]||{};
+    const fieldChecks=[
+      !!todayD.diet,
+      !!todayD.sport1?.done,
+      !!todayD.sport2?.done,
+      (todayD.water||0)>=3,
+      !!todayD.read?.done,
+      !!todayD.photo,
+      !!todayD.meditate,
+    ];
+    html+=`<div class="lb-card${isMe?' me':''}${i===0?' top':''}">
+      <div class="lb-rank">${medal}</div>
+      <div class="lb-body">
+        <div class="lb-name">${p.emoji} ${p.name}
+          ${isMe?'<span class="tag-me">MOI</span>':''}
+          ${st>=3?`<span class="streak-badge">🔥${st}</span>`:''}
+        </div>
+        <div class="lb-sub">${sc} jour${sc>1?'s':''} validé${sc>1?'s':''} · ${st>0?st+' de suite 🔥':'Pas encore de série'}</div>
+        <div class="lb-dots">
+          ${fieldChecks.map(ok=>`<div class="lb-dot${ok?' ok':''}"></div>`).join('')}
+          <span class="lb-dot-lbl">${todayCnt}/7 aujourd'hui${todayD.validated?' ✅':''}</span>
+        </div>
+        <div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:${(sc/maxSc*100).toFixed(0)}%"></div></div>
+      </div>
+      <div class="lb-score">
+        <div class="lb-score-n">${sc}</div>
+        <div class="lb-score-l">jours</div>
+      </div>
+    </div>`;
+  });
+
+  // My calendar
+  html+=`<div class="sect">Mon calendrier des 75 jours</div>
+    <div class="cal-mini">
+      ${Array.from({length:75},(_,i)=>{
+        const d=new Date(START_DATE);d.setDate(d.getDate()+i);
+        const k=ds(d);
+        const dd=(me.days||{})[k];
+        const isT=i+1===S.dayNum,isPast=i+1<S.dayNum;
+        const cnt=getDayCompletion(me,k);
+        let cls='cal-cell';
+        if(dd?.validated) cls+=' ok';
+        else if(cnt>0&&isPast) cls+=' part';
+        else if(isT) cls+=' now';
+        else if(!isPast) cls+=' fut';
+        return `<div class="${cls}">${i+1}</div>`;
+      }).join('')}
+    </div>`;
+
+  html+=`</div>`;
+  c.innerHTML=html;
+}
+
+/* ── GRAPHS ──────────────────────────────────────────────── */
+function renderGraphs(c){
+  const players=Object.entries(S.players);
+  const dayN=S.dayNum;
+
+  // Last N days
+  const nDays=Math.min(14,dayN);
+  const dayRange=Array.from({length:nDays},(_,i)=>{
+    const d=new Date(START_DATE);
+    d.setDate(d.getDate()+dayN-nDays+i);
+    return{key:ds(d),lbl:'J'+(dayN-nDays+i+1)};
+  });
+
+  // Sport aggregation
+  const sportAgg={}; // {playerId: {sportTypeId: count}}
+  players.forEach(([id,p])=>{
+    sportAgg[id]={};
+    Object.values(p.days||{}).forEach(dd=>{
+      if(dd.sport1?.type) sportAgg[id][dd.sport1.type]=(sportAgg[id][dd.sport1.type]||0)+1;
+      if(dd.sport2?.type) sportAgg[id][dd.sport2.type]=(sportAgg[id][dd.sport2.type]||0)+1;
+    });
+  });
+
+  const chartCfg={
+    plugins:{
+      legend:{labels:{color:'#666',font:{size:11,family:'DM Sans'},boxWidth:12,padding:12}},
+      tooltip:{backgroundColor:'#18181f',titleColor:'#eee',bodyColor:'#aaa',borderColor:'#2a2a3a',borderWidth:1},
+    },
+    scales:{
+      x:{ticks:{color:'#444',font:{size:10}},grid:{color:'#1a1a22'}},
+      y:{ticks:{color:'#444',font:{size:10}},grid:{color:'#1a1a22'}},
+    },
+  };
+
+  c.innerHTML=`<div class="panel">
+    <div class="sect">Eau quotidienne (L) · ${nDays} derniers jours</div>
+    <div class="chart-card">
+      <div class="chart-wrap"><canvas id="ch-water"></canvas></div>
+    </div>
+
+    <div class="sect">Complétion journalière (%) · ${nDays} derniers jours</div>
+    <div class="chart-card">
+      <div class="chart-wrap"><canvas id="ch-compl"></canvas></div>
+    </div>
+
+    <div class="sect">Types de sport · Toute la période</div>
+    <div class="chart-card">
+      <div class="chart-wrap" style="height:210px"><canvas id="ch-sport"></canvas></div>
+    </div>
+
+    <div class="sect">Détail sport par personne</div>
+    ${players.map(([id,p],pi)=>{
+      const types=Object.entries(sportAgg[id]||{}).sort(([,a],[,b])=>b-a);
+      const maxC=types[0]?.[1]||1;
+      if(!types.length) return `<div class="sport-person-card">
+        <div class="sport-person-title" style="color:${COLORS[pi]}">${p.emoji} ${p.name}</div>
+        <div style="font-size:.8rem;color:var(--muted)">Aucune séance typée encore</div>
+      </div>`;
+      return `<div class="sport-person-card">
+        <div class="sport-person-title" style="color:${COLORS[pi]}">${p.emoji} ${p.name}</div>
+        ${types.map(([tid,cnt])=>{
+          const st=SPORT_TYPES.find(s=>s.id===tid);
+          return `<div class="sport-row">
+            <div class="sport-row-e">${st?.e||'💪'}</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div class="sport-row-n">${st?.n||tid}</div>
+                <div style="display:flex;align-items:baseline;gap:4px">
+                  <div class="sport-row-c" style="color:${COLORS[pi]}">${cnt}</div>
+                  <div class="sport-row-l">séance${cnt>1?'s':''}</div>
+                </div>
+              </div>
+              <div class="sport-row-bar mt4"><div class="sport-row-bar-fill" style="width:${(cnt/maxC*100).toFixed(0)}%;background:${COLORS[pi]}"></div></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // Water chart
+  S.charts.water=new Chart(document.getElementById('ch-water'),{
+    type:'line',
+    data:{
+      labels:dayRange.map(d=>d.lbl),
+      datasets:players.map(([id,p],i)=>({
+        label:p.emoji+' '+p.name,
+        data:dayRange.map(d=>(p.days?.[d.key]?.water||0)),
+        borderColor:COLORS[i],
+        backgroundColor:COLORS[i]+'20',
+        fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:COLORS[i],
+      }))
+    },
+    options:{
+      ...chartCfg,
+      scales:{
+        x:chartCfg.scales.x,
+        y:{...chartCfg.scales.y,min:0,max:4,ticks:{...chartCfg.scales.y.ticks,callback:v=>v+'L'},
+          grid:{color:'#1a1a22'}}
+      }
+    }
+  });
+
+  // Completion chart
+  S.charts.compl=new Chart(document.getElementById('ch-compl'),{
+    type:'bar',
+    data:{
+      labels:dayRange.map(d=>d.lbl),
+      datasets:players.map(([id,p],i)=>({
+        label:p.emoji+' '+p.name,
+        data:dayRange.map(d=>Math.round(getDayCompletion(p,d.key)/7*100)),
+        backgroundColor:COLORS[i]+'bb',borderRadius:5,
+      }))
+    },
+    options:{
+      ...chartCfg,
+      scales:{
+        x:chartCfg.scales.x,
+        y:{...chartCfg.scales.y,min:0,max:100,ticks:{...chartCfg.scales.y.ticks,callback:v=>v+'%'},grid:{color:'#1a1a22'}}
+      }
+    }
+  });
+
+  // Sport type chart
+  const activeSportTypes=SPORT_TYPES.filter(st=>players.some(([id])=>sportAgg[id]?.[st.id]>0));
+  const chartSportTypes=activeSportTypes.length?activeSportTypes:SPORT_TYPES.slice(0,4);
+  S.charts.sport=new Chart(document.getElementById('ch-sport'),{
+    type:'bar',
+    data:{
+      labels:chartSportTypes.map(st=>st.e+' '+st.n),
+      datasets:players.map(([id,p],i)=>({
+        label:p.emoji+' '+p.name,
+        data:chartSportTypes.map(st=>sportAgg[id]?.[st.id]||0),
+        backgroundColor:COLORS[i]+'bb',borderRadius:5,
+      }))
+    },
+    options:{
+      ...chartCfg,
+      scales:{
+        x:chartCfg.scales.x,
+        y:{...chartCfg.scales.y,min:0,ticks:{...chartCfg.scales.y.ticks,stepSize:1},grid:{color:'#1a1a22'}}
+      }
+    }
+  });
+}
+
+/* ── JOURNAL ─────────────────────────────────────────────── */
+function renderJournal(c){
+  const players=Object.entries(S.players);
+
+  // Collect photos from all players
+  S.photosCache=[];
+  players.forEach(([id,p])=>{
+    Object.entries(p.days||{}).forEach(([date,dd])=>{
+      if(dd.photo){
+        const offset=Math.floor((new Date(date)-new Date(START_DATE))/86400000)+1;
+        S.photosCache.push({src:dd.photo,playerId:id,name:p.name,emoji:p.emoji,date,dayNum:offset});
+      }
+    });
+  });
+  S.photosCache.sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  // Collect books
+  const books=[];
+  players.forEach(([id,p])=>{
+    const seen=new Set();
+    // From books collection
+    Object.entries(p.books||{}).forEach(([bid,b])=>{
+      seen.add(b.title);
+      books.push({...b,playerId:id,pName:p.name,pEmoji:p.emoji,bid,fromBooks:true});
+    });
+    // From daily reads
+    Object.entries(p.days||{}).forEach(([date,dd])=>{
+      if(dd.read?.book&&!seen.has(dd.read.book)){
+        seen.add(dd.read.book);
+        const off=Math.floor((new Date(date)-new Date(START_DATE))/86400000)+1;
+        books.push({title:dd.read.book,startDay:off,endDay:null,playerId:id,pName:p.name,pEmoji:p.emoji,bid:null,fromBooks:false});
+      }
+    });
+  });
+
+  let html=`<div class="panel">
+    <!-- PHOTOS -->
+    <div class="sect">Photos de progression</div>`;
+
+  if(S.photosCache.length===0){
+    html+=`<div class="no-content"><div class="nc-icon">📸</div><div class="nc-text">Les photos de progression apparaîtront ici dès que vous en ajoutez dans l'onglet Aujourd'hui.</div></div>`;
+  } else {
+    const playersWith=players.filter(([id])=>S.photosCache.some(p=>p.playerId===id));
+    html+=`<div class="photo-filter-row">
+      <button class="sp-pill on" id="pf-all" onclick="filterPhotos('all')">Tous (${S.photosCache.length})</button>
+      ${playersWith.map(([id,p])=>`<button class="sp-pill" id="pf-${id}" onclick="filterPhotos('${id}')">${p.emoji} ${p.name}</button>`).join('')}
+    </div>
+    <div class="photo-grid" id="photo-grid">
+      ${S.photosCache.map((ph,idx)=>`<div class="photo-thumb-wrap" data-pid="${ph.playerId}" id="pt-${idx}">
+        <img src="${ph.src}" class="photo-thumb" onclick="openPhoto(${idx})" loading="lazy"/>
+        <div class="photo-thumb-label">${ph.emoji} J${ph.dayNum}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // BOOKS
+  html+=`<div class="sect" style="margin-top:28px">Livres lus</div>`;
+  if(books.length===0){
+    html+=`<div class="no-content"><div class="nc-icon">📚</div><div class="nc-text">Les livres apparaîtront ici quand vous les renseignerez dans l'onglet Aujourd'hui.</div></div>`;
+  } else {
+    // Deduplicate by title+player
+    const seen=new Set();
+    books.filter(b=>{const k=b.playerId+':'+b.title;if(seen.has(k))return false;seen.add(k);return true})
+    .forEach(b=>{
+      html+=`<div class="book-card">
+        <div class="book-icon-big">📖</div>
+        <div class="book-info">
+          <div class="book-title">${escHtml(b.title)}</div>
+          <div class="book-meta">${b.pEmoji} ${b.pName} · Commencé J${b.startDay}${b.endDay?` · Fini J${b.endDay}`:''}</div>
+          ${!b.endDay&&b.fromBooks?`<button class="book-finish-btn" onclick="finishBook('${b.playerId}','${b.bid}')">✓ Marquer comme lu</button>`:''}
+        </div>
+        <div class="book-status ${b.endDay?'done':'reading'}">${b.endDay?'Lu ✓':'En cours'}</div>
+      </div>`;
+    });
+  }
+
+  html+=`</div>`;
+  c.innerHTML=html;
+}
+
+function filterPhotos(playerId){
+  document.querySelectorAll('[id^="pf-"]').forEach(b=>b.classList.remove('on'));
+  document.getElementById('pf-'+playerId)?.classList.add('on');
+  document.querySelectorAll('.photo-thumb-wrap').forEach(el=>{
+    el.style.display=(playerId==='all'||el.dataset.pid===playerId)?'block':'none';
+  });
+}
+
+async function finishBook(playerId,bid){
+  await db.ref(`players/${playerId}/books/${bid}/endDay`).set(S.dayNum);
+  toast('📚 Livre terminé ! Bravo !');
+}
+
+/* ── LIGHTBOX ────────────────────────────────────────────── */
+function openPhoto(idx){
+  const ph=S.photosCache[idx];
+  if(!ph) return;
+  const lb=document.createElement('div');
+  lb.className='lightbox';
+  lb.id='lb';
+  lb.innerHTML=`
+    <img src="${ph.src}" onclick="event.stopPropagation()"/>
+    <div class="lb-info">${ph.emoji} ${ph.name} · Jour ${ph.dayNum} · ${ph.date}</div>
+    <button class="lb-close" onclick="closeLb()">✕</button>`;
+  lb.onclick=closeLb;
+  document.body.appendChild(lb);
+}
+
+function closeLb(){document.getElementById('lb')?.remove()}
+
+/* ── SETTINGS ────────────────────────────────────────────── */
+function openSettings(){
+  const overlay=document.getElementById('overlay');
+  const modal=document.getElementById('modal');
+  const players=Object.entries(S.players);
+
+  modal.innerHTML=`<div class="modal-title">⚙ Profils</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">Changer de profil ou ajouter un participant</div>
+    ${players.map(([id,p])=>`
+      <div class="profile-row${id===S.myId?' me-row':''}">
+        <div class="profile-emoji-big">${p.emoji}</div>
+        <div style="flex:1">
+          <div class="profile-name">${p.name}${id===S.myId?'<span class="tag-me">MOI</span>':''}</div>
+          <div class="profile-score">${getScore(p)} jours validés</div>
+        </div>
+        ${id!==S.myId?`<button class="btn-fire" style="padding:8px 14px;font-size:.8rem" onclick="pickPlayerFromModal('${id}')">Choisir</button>`:''}
+      </div>`).join('')}
+    <div style="margin-top:18px">
+      <div style="font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px">Ajouter un participant</div>
+      <div class="emoji-strip" id="modal-emo">${EMOJIS.map(e=>`<button class="e-btn${S.selEmoji===e?' on':''}" onclick="setEmoji('${e}')">${e}</button>`).join('')}</div>
+      <div class="row mt8">
+        <input class="inp" id="modal-name" placeholder="Prénom..." maxlength="14" onkeydown="if(event.key==='Enter')addFromModal()"/>
+        <button class="btn-fire" onclick="addFromModal()">+ Ajouter</button>
+      </div>
+    </div>`;
+
+  overlay.classList.add('open');
+  modal.classList.add('open');
+  overlay.onclick=closeSettings;
+}
+
+function closeSettings(){
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('modal').classList.remove('open');
+}
+
+async function pickPlayerFromModal(id){
+  await pickPlayer(id);
+  closeSettings();
+}
+
+async function addFromModal(){
+  const name=(document.getElementById('modal-name')?.value||'').trim();
+  if(!name) return;
+  const id='p'+Date.now();
+  await playersRef.child(id).set({name,emoji:S.selEmoji,days:{},books:{}});
+  toast('👊 '+name+' a rejoint le défi !');
+  closeSettings();
+}
+
+/* ── BOOT ────────────────────────────────────────────────── */
+init();
+</script>
+</body>
+</html>
