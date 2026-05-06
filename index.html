@@ -323,6 +323,30 @@ input[type=range]::-webkit-slider-thumb{
 .cal-cell.part{background:var(--gold);border-color:var(--gold);color:#000}
 .cal-cell.now{border-color:var(--fire);color:var(--fire)}
 .cal-cell.fut{opacity:.14}
+.cal-cell.clickable{cursor:pointer;transition:transform .12s,box-shadow .12s}
+.cal-cell.clickable:hover{transform:scale(1.25);box-shadow:0 0 0 2px var(--fire);z-index:1;position:relative}
+
+/* Unvalidate button */
+.unval-btn{
+  width:100%;margin-top:8px;padding:11px;background:transparent;
+  border:1px solid rgba(255,68,0,.25);border-radius:12px;
+  color:var(--muted);font-size:.76rem;font-weight:700;
+  transition:all .2s;letter-spacing:.5px;
+}
+.unval-btn:hover{border-color:var(--fire);color:var(--fire);background:rgba(255,68,0,.06)}
+
+/* Book suggestion pills */
+.book-suggests{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.book-sug-pill{
+  padding:4px 10px;border-radius:14px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--muted);font-size:.7rem;font-weight:600;
+  transition:all .15s;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.book-sug-pill:hover{border-color:var(--blue);color:var(--text)}
+
+/* Day modal header */
+.day-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.day-modal-date{font-size:.72rem;color:var(--muted);font-weight:700}
 
 /* ── CHARTS ──────────────────────────────────────────────── */
 .chart-card{
@@ -549,6 +573,8 @@ const S = {
   photosCache: [],
   waterDebounce: null,
   dayNum: 1,
+  editingDate: null,
+  editingDayNum: null,
 };
 
 /* ── HELPERS ─────────────────────────────────────────────── */
@@ -589,9 +615,16 @@ function getDayCompletion(p, dateKey){
 
 function myDayRef(){ return db.ref(`players/${S.myId}/days/${ds()}`) }
 
+function dayRefForDate(dateKey){ return db.ref(`players/${S.myId}/days/${dateKey}`) }
+
 async function setField(field, val){
   if(!S.myId) return;
   await myDayRef().child(field).set(val);
+}
+
+async function setFieldOn(dateKey, field, val){
+  if(!S.myId) return;
+  await dayRefForDate(dateKey).child(field).set(val);
 }
 
 async function compressImage(file, maxPx=600, q=0.72){
@@ -649,6 +682,11 @@ async function init(){
     S.players=snap.val()||{};
     if(!S.selStatsPlayer) S.selStatsPlayer=S.myId;
     renderApp();
+    // Re-render the day editor modal if it is currently open
+    if(S.editingDate){
+      const mc=document.getElementById('modal-day-content');
+      if(mc) renderDayPanel(mc, S.editingDate, S.editingDayNum, true);
+    }
   });
 }
 
@@ -834,16 +872,18 @@ async function createPlayer(){
 
 /* ── TODAY ───────────────────────────────────────────────── */
 function renderToday(c){
+  renderDayPanel(c, ds(), S.dayNum, false);
+}
+
+function renderDayPanel(c, dateKey, dayNum, isModal){
   const me=S.players[S.myId];
-  const todayKey=ds();
-  const dd=(me.days||{})[todayKey]||{};
+  const dd=(me.days||{})[dateKey]||{};
   const s1=dd.sport1||{};
   const s2=dd.sport2||{};
   const rd=dd.read||{};
   const wL=dd.water||0;
   const validated=!!dd.validated;
-  const dayN=S.dayNum;
-  const q=QUOTES[dayN%QUOTES.length];
+  const q=QUOTES[dayNum%QUOTES.length];
 
   let cnt=0;
   if(dd.diet) cnt++;
@@ -855,7 +895,6 @@ function renderToday(c){
   if(dd.meditate) cnt++;
   const allDone=cnt===7;
 
-  // Water segments (16 = 0.25 steps up to 4L)
   const segs=Array.from({length:16},(_,i)=>{
     const l=(i+1)*0.25;
     let cls='wseg';
@@ -866,18 +905,25 @@ function renderToday(c){
   const wPct=(wL/4*100).toFixed(0);
   const sliderBg=`linear-gradient(to right,var(--blue) ${wPct}%,var(--bg3) ${wPct}%)`;
 
-  c.innerHTML=`<div class="panel">
-    <!-- Quote -->
-    <div class="quote-block">
+  // Book suggestions (books already added by this player)
+  const myBooks=Object.values(me.books||{});
+  const bookSuggestions=myBooks.length && rd.done && !validated
+    ? `<div class="book-suggests">${myBooks.map(b=>`<button class="book-sug-pill" onclick="selectBook('${escHtml(b.title).replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">${escHtml(b.title)}</button>`).join('')}</div>`
+    : '';
+
+  const photoInId=isModal?'photo-in-modal':'photo-in';
+
+  const inner=`
+    ${!isModal?`<div class="quote-block">
       <div class="quote-text">"${q[0]}"</div>
       ${q[1]?`<div class="quote-author">— ${q[1]}</div>`:''}
-    </div>
+    </div>`:''}
 
-    <div class="sect">Mes défis — ${cnt}/7${validated?' · ✅ Journée validée !':''}</div>
+    <div class="sect">Défis — ${cnt}/7${validated?' · ✅ Journée validée !':''}</div>
 
     <!-- DIET -->
     <div class="ci${dd.diet?' ok':''}${validated?' locked':''}">
-      <div class="ci-row" onclick="${!validated ? "toggleField('diet')" : ''}">
+      <div class="ci-row" onclick="${!validated?`toggleFieldOn('${dateKey}','diet')`:''}">
         <div class="ci-check">${dd.diet?'✓':''}</div>
         <div class="ci-body"><div class="ci-title">🥗 Régime strict</div><div class="ci-sub">Pas de fast food · Zéro alcool</div></div>
       </div>
@@ -885,68 +931,59 @@ function renderToday(c){
 
     <!-- SPORT 1 -->
     <div class="ci${s1.done?' ok':''}${validated?' locked':''}">
-      <div class="ci-row" onclick="${!validated?'toggleSport(1)':''}">
+      <div class="ci-row" onclick="${!validated?`toggleSportOn('${dateKey}',1)`:''}">
         <div class="ci-check">${s1.done?'✓':''}</div>
         <div class="ci-body">
-          <div class="ci-title">🏋️ Sport #1${s1.type?` <span style="font-weight:400;color:var(--muted)">· ${SPORT_TYPES.find(x=>x.id===s1.type)?.e} ${SPORT_TYPES.find(x=>x.id===s1.type)?.n}</span>`:''}
-          </div>
+          <div class="ci-title">🏋️ Sport #1${s1.type?` <span style="font-weight:400;color:var(--muted)">· ${SPORT_TYPES.find(x=>x.id===s1.type)?.e} ${SPORT_TYPES.find(x=>x.id===s1.type)?.n}</span>`:''}</div>
           <div class="ci-sub">45 min minimum</div>
         </div>
       </div>
       ${s1.done&&!validated?`<div class="ci-extras">
         <div class="sp-pill-label">Type de séance</div>
-        <div class="sport-pills">${SPORT_TYPES.map(st=>`<button class="sp-pill${s1.type===st.id?' on':''}" onclick="setSportType(1,'${st.id}')">${st.e} ${st.n}</button>`).join('')}</div>
+        <div class="sport-pills">${SPORT_TYPES.map(st=>`<button class="sp-pill${s1.type===st.id?' on':''}" onclick="setSportTypeOn('${dateKey}',1,'${st.id}')">${st.e} ${st.n}</button>`).join('')}</div>
       </div>`:''}
     </div>
 
     <!-- SPORT 2 -->
     <div class="ci${s2.done?' ok':''}${validated?' locked':''}">
-      <div class="ci-row" onclick="${!validated?'toggleSport(2)':''}">
+      <div class="ci-row" onclick="${!validated?`toggleSportOn('${dateKey}',2)`:''}">
         <div class="ci-check">${s2.done?'✓':''}</div>
         <div class="ci-body">
-          <div class="ci-title">🌿 Sport extérieur${s2.type?` <span style="font-weight:400;color:var(--muted)">· ${SPORT_TYPES.find(x=>x.id===s2.type)?.e} ${SPORT_TYPES.find(x=>x.id===s2.type)?.n}</span>`:''}
-          </div>
+          <div class="ci-title">🌿 Sport extérieur${s2.type?` <span style="font-weight:400;color:var(--muted)">· ${SPORT_TYPES.find(x=>x.id===s2.type)?.e} ${SPORT_TYPES.find(x=>x.id===s2.type)?.n}</span>`:''}</div>
           <div class="ci-sub">45 min dehors · peu importe la météo</div>
         </div>
       </div>
       ${s2.done&&!validated?`<div class="ci-extras">
         <div class="sp-pill-label">Type de séance outdoor</div>
-        <div class="sport-pills">${SPORT_TYPES.map(st=>`<button class="sp-pill${s2.type===st.id?' on':''}" onclick="setSportType(2,'${st.id}')">${st.e} ${st.n}</button>`).join('')}</div>
+        <div class="sport-pills">${SPORT_TYPES.map(st=>`<button class="sp-pill${s2.type===st.id?' on':''}" onclick="setSportTypeOn('${dateKey}',2,'${st.id}')">${st.e} ${st.n}</button>`).join('')}</div>
       </div>`:''}
     </div>
 
     <!-- WATER -->
     <div class="ci${wL>=3?' ok':''}${validated?' locked':''}">
       <div class="ci-row" style="cursor:default;pointer-events:none">
-        <div class="ci-check" style="${wL>=3?'':'border-color:var(--blue)'}">
-          ${wL>=3?'✓':'💧'}
-        </div>
+        <div class="ci-check" style="${wL>=3?'':'border-color:var(--blue)'}">${wL>=3?'✓':'💧'}</div>
         <div class="ci-body"><div class="ci-title">💧 Eau</div><div class="ci-sub">Objectif : 3 litres par jour</div></div>
       </div>
       <div class="ci-extras">
         <div class="water-top">
           <div class="water-num" id="w-num">${wL.toFixed(1)}</div>
           <div class="water-unit">L</div>
-          <div class="water-goal-lbl ${wL>=3?'ok':'nok'}" id="w-goal">
-            ${wL>=3?'✅ Objectif atteint !':'Objectif : 3 L'}
-          </div>
+          <div class="water-goal-lbl ${wL>=3?'ok':'nok'}" id="w-goal">${wL>=3?'✅ Objectif atteint !':'Objectif : 3 L'}</div>
         </div>
         <div class="water-segs" id="w-segs">${segs}</div>
         ${!validated?`
         <input type="range" id="w-slider" min="0" max="4" step="0.25" value="${wL}"
           style="background:${sliderBg}"
           oninput="updateWaterVisuals(parseFloat(this.value))"
-          onchange="commitWater(parseFloat(this.value))">
-        <div class="water-ticks">
-          <span>0 L</span><span class="goal-tick">▲ 3L</span><span>4 L</span>
-        </div>`:
-        ''}
+          onchange="commitWaterOn('${dateKey}',parseFloat(this.value))">
+        <div class="water-ticks"><span>0 L</span><span class="goal-tick">▲ 3L</span><span>4 L</span></div>`:''}
       </div>
     </div>
 
     <!-- LECTURE -->
     <div class="ci${rd.done?' ok':''}${validated?' locked':''}">
-      <div class="ci-row" onclick="${!validated?'toggleRead()':''}">
+      <div class="ci-row" onclick="${!validated?`toggleReadOn('${dateKey}')`:''}">
         <div class="ci-check">${rd.done?'✓':''}</div>
         <div class="ci-body">
           <div class="ci-title">📖 10 pages${rd.book?` <span style="font-weight:400;font-style:italic;color:var(--muted)">· ${escHtml(rd.book)}</span>`:''}</div>
@@ -954,30 +991,32 @@ function renderToday(c){
         </div>
       </div>
       ${rd.done&&!validated?`<div class="ci-extras">
+        ${bookSuggestions}
         <div class="book-inp-row">
           <input class="inp" id="book-in" placeholder="Titre du livre lu..." value="${rd.book?escHtml(rd.book):''}"
-            onkeydown="if(event.key==='Enter')saveBook()" maxlength="60"/>
-          <button class="btn-fire" onclick="saveBook()" style="padding:9px 14px;font-size:.82rem">OK</button>
+            onkeydown="if(event.key==='Enter')saveBookOn('${dateKey}',${dayNum})" maxlength="60"/>
+          <button class="btn-fire" onclick="saveBookOn('${dateKey}',${dayNum})" style="padding:9px 14px;font-size:.82rem">OK</button>
         </div>
       </div>`:''}
     </div>
 
     <!-- PHOTO -->
     <div class="ci${dd.photo?' ok':''}${validated?' locked':''}">
-      <div class="ci-row" onclick="${!dd.photo && !validated ? "document.getElementById('photo-in').click()" : ''}">
+      <div class="ci-row" onclick="${!dd.photo&&!validated?`document.getElementById('${photoInId}').click()`:''}">
         <div class="ci-check">${dd.photo?'✓':''}</div>
-        <div class="ci-body"><div class="ci-title">📸 Photo de progression</div><div class="ci-sub">1 photo · Jour ${dayN}</div></div>
+        <div class="ci-body"><div class="ci-title">📸 Photo de progression</div><div class="ci-sub">1 photo · Jour ${dayNum}</div></div>
       </div>
       ${!validated?`<div class="ci-extras">
-        <input type="file" id="photo-in" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+        <input type="file" id="${photoInId}" accept="image/*" capture="environment" style="display:none"
+          onchange="handlePhotoOn(event,'${dateKey}')">
         ${dd.photo
           ?`<div class="photo-preview-wrap">
                <img src="${dd.photo}" class="photo-preview" onclick="openPhoto(0)" style="cursor:pointer"/>
                <div class="photo-actions">
-                 <button class="photo-change-btn" onclick="document.getElementById('photo-in').click()">✎ Changer</button>
+                 <button class="photo-change-btn" onclick="document.getElementById('${photoInId}').click()">✎ Changer</button>
                </div>
              </div>`
-          :`<div class="photo-upload" onclick="document.getElementById('photo-in').click()">
+          :`<div class="photo-upload" onclick="document.getElementById('${photoInId}').click()">
                <div class="pu-icon">📷</div>
                <div class="pu-hint">Toucher pour prendre ou choisir une photo</div>
              </div>`}
@@ -986,41 +1025,65 @@ function renderToday(c){
 
     <!-- MEDITATION -->
     <div class="ci${dd.meditate?' ok':''}${validated?' locked':''}">
-      <div class="ci-row" onclick="${!validated ? "toggleField('meditate')" : ''}">
+      <div class="ci-row" onclick="${!validated?`toggleFieldOn('${dateKey}','meditate')`:''}">
         <div class="ci-check">${dd.meditate?'✓':''}</div>
         <div class="ci-body"><div class="ci-title">🧘 Méditation</div><div class="ci-sub">10 min · Pleine conscience</div></div>
       </div>
     </div>
 
     ${validated
-      ?`<button class="val-btn validated" disabled>✅ JOURNÉE ${dayN} VALIDÉE !</button>`
-      :`<button class="val-btn" onclick="validateDay()" ${!allDone?'disabled':''}>
-          ${allDone?'VALIDER MA JOURNÉE 🔥':'VALIDER ('+cnt+'/7 DÉFIS)'}
+      ?`<button class="val-btn validated" disabled>✅ JOURNÉE ${dayNum} VALIDÉE !</button>
+        <button class="unval-btn" onclick="unvalidateDayOn('${dateKey}',${dayNum})">↩ Annuler la validation du jour ${dayNum}</button>`
+      :`<button class="val-btn" onclick="validateDayOn('${dateKey}',${dayNum})" ${!allDone?'disabled':''}>
+          ${allDone?`VALIDER MA JOURNÉE 🔥`:`VALIDER (${cnt}/7 DÉFIS)`}
         </button>`}
-  </div>`;
+  `;
+
+  if(isModal){
+    c.innerHTML=inner;
+  } else {
+    c.innerHTML=`<div class="panel">${inner}</div>`;
+  }
 }
+
+function selectBook(title){
+  const inp=document.getElementById('book-in');
+  if(inp){inp.value=title;inp.focus();}
+}
+
+
 
 /* Today actions */
 function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
 
-async function toggleField(field){
+/* Legacy wrappers (keep for safety) */
+async function toggleField(field){ await toggleFieldOn(ds(), field); }
+async function toggleSport(num){ await toggleSportOn(ds(), num); }
+async function setSportType(num,type){ await setSportTypeOn(ds(), num, type); }
+async function commitWater(l){ await commitWaterOn(ds(), l); }
+async function toggleRead(){ await toggleReadOn(ds()); }
+async function saveBook(){ await saveBookOn(ds(), S.dayNum); }
+async function handlePhoto(event){ await handlePhotoOn(event, ds()); }
+
+/* Parameterized actions — work for any date */
+async function toggleFieldOn(dateKey, field){
   const me=S.players[S.myId];
-  const cur=(me.days||{})[ds()]?.[field];
-  await setField(field,!cur);
+  const cur=(me.days||{})[dateKey]?.[field];
+  await setFieldOn(dateKey, field, !cur);
 }
 
-async function toggleSport(num){
+async function toggleSportOn(dateKey, num){
   const me=S.players[S.myId];
   const field='sport'+num;
-  const cur=(me.days||{})[ds()]?.[field]||{};
-  await setField(field,{...cur,done:!cur.done});
+  const cur=(me.days||{})[dateKey]?.[field]||{};
+  await setFieldOn(dateKey, field, {...cur, done:!cur.done});
 }
 
-async function setSportType(num,type){
+async function setSportTypeOn(dateKey, num, type){
   const me=S.players[S.myId];
   const field='sport'+num;
-  const cur=(me.days||{})[ds()]?.[field]||{};
-  await setField(field,{...cur,type});
+  const cur=(me.days||{})[dateKey]?.[field]||{};
+  await setFieldOn(dateKey, field, {...cur, type});
 }
 
 function updateWaterVisuals(l){
@@ -1039,44 +1102,43 @@ function updateWaterVisuals(l){
   });
 }
 
-async function commitWater(l){
-  await setField('water',l);
+async function commitWaterOn(dateKey, l){
+  await setFieldOn(dateKey, 'water', l);
 }
 
-async function toggleRead(){
+async function toggleReadOn(dateKey){
   const me=S.players[S.myId];
-  const cur=(me.days||{})[ds()]?.read||{};
-  await setField('read',{...cur,done:!cur.done});
+  const cur=(me.days||{})[dateKey]?.read||{};
+  await setFieldOn(dateKey, 'read', {...cur, done:!cur.done});
 }
 
-async function saveBook(){
+async function saveBookOn(dateKey, dayNum){
   const title=(document.getElementById('book-in')?.value||'').trim();
   if(!title) return;
   const me=S.players[S.myId];
-  const cur=(me.days||{})[ds()]?.read||{};
-  await setField('read',{...cur,book:title});
-  // Add to player's book log
+  const cur=(me.days||{})[dateKey]?.read||{};
+  await setFieldOn(dateKey, 'read', {...cur, book:title});
   const booksRef=db.ref(`players/${S.myId}/books`);
   const snap=await booksRef.once('value');
   const existing=Object.values(snap.val()||{}).find(b=>b.title===title);
   if(!existing){
-    await booksRef.push({title,startDay:S.dayNum,endDay:null});
+    await booksRef.push({title, startDay:dayNum, endDay:null});
   }
   toast('📖 '+title+' enregistré !');
 }
 
-async function handlePhoto(event){
+async function handlePhotoOn(event, dateKey){
   const file=event.target.files[0];
   if(!file) return;
   toast('⏳ Compression en cours...');
   const compressed=await compressImage(file);
-  await setField('photo',compressed);
+  await setFieldOn(dateKey, 'photo', compressed);
   toast('📸 Photo sauvegardée !');
 }
 
-async function validateDay(){
+async function validateDayOn(dateKey, dayNum){
   const me=S.players[S.myId];
-  const dd=(me.days||{})[ds()]||{};
+  const dd=(me.days||{})[dateKey]||{};
   let c=0;
   if(dd.diet) c++;
   if(dd.sport1?.done) c++;
@@ -1086,8 +1148,17 @@ async function validateDay(){
   if(dd.photo) c++;
   if(dd.meditate) c++;
   if(c<7) return;
-  await myDayRef().update({validated:true});
-  toast('🔥 Journée '+S.dayNum+' validée ! Continue comme ça !');
+  await dayRefForDate(dateKey).update({validated:true});
+  toast('🔥 Journée '+dayNum+' validée ! Continue comme ça !');
+}
+
+async function unvalidateDayOn(dateKey, dayNum){
+  await dayRefForDate(dateKey).child('validated').set(false);
+  toast('↩️ Validation annulée — Jour '+dayNum, '#ff8800', '#000');
+}
+
+async function validateDay(){
+  await validateDayOn(ds(), S.dayNum);
 }
 
 /* ── LEADERBOARD ─────────────────────────────────────────── */
@@ -1136,7 +1207,7 @@ function renderLeaderboard(c){
   });
 
   // My calendar
-  html+=`<div class="sect">Mon calendrier des 75 jours</div>
+  html+=`<div class="sect">Mon calendrier des 75 jours <span style="font-size:.58rem;color:var(--muted);font-weight:400;letter-spacing:0">· Toucher un jour pour le modifier</span></div>
     <div class="cal-mini">
       ${Array.from({length:75},(_,i)=>{
         const d=new Date(START_DATE);d.setDate(d.getDate()+i);
@@ -1149,7 +1220,9 @@ function renderLeaderboard(c){
         else if(cnt>0&&isPast) cls+=' part';
         else if(isT) cls+=' now';
         else if(!isPast) cls+=' fut';
-        return `<div class="${cls}">${i+1}</div>`;
+        const isEditable=isPast||isT;
+        if(isEditable) cls+=' clickable';
+        return `<div class="${cls}" ${isEditable?`onclick="openDayModal('${k}',${i+1})"`:''} title="${isEditable?'Jour '+(i+1)+' — cliquer pour modifier':''}">${i+1}</div>`;
       }).join('')}
     </div>`;
 
@@ -1157,7 +1230,35 @@ function renderLeaderboard(c){
   c.innerHTML=html;
 }
 
-/* ── GRAPHS ──────────────────────────────────────────────── */
+/* ── DAY EDITOR MODAL ───────────────────────────────────── */
+function openDayModal(dateKey, dayNum){
+  S.editingDate=dateKey;
+  S.editingDayNum=dayNum;
+  const overlay=document.getElementById('overlay');
+  const modal=document.getElementById('modal');
+
+  // Format date nicely
+  const d=new Date(dateKey+'T12:00:00');
+  const formatted=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+
+  modal.innerHTML=`
+    <div class="day-modal-hdr">
+      <div>
+        <div class="modal-title" style="margin-bottom:2px">✏️ JOUR ${dayNum}</div>
+        <div class="day-modal-date">${formatted}</div>
+      </div>
+      <button onclick="closeSettings()" style="background:none;border:none;color:var(--muted);font-size:1.4rem;line-height:1">✕</button>
+    </div>
+    <div id="modal-day-content"></div>`;
+
+  overlay.classList.add('open');
+  modal.classList.add('open');
+  overlay.onclick=closeSettings;
+
+  renderDayPanel(document.getElementById('modal-day-content'), dateKey, dayNum, true);
+}
+
+
 function renderGraphs(c){
   const players=Object.entries(S.players);
   const dayN=S.dayNum;
@@ -1367,12 +1468,14 @@ function renderJournal(c){
     const seen=new Set();
     books.filter(b=>{const k=b.playerId+':'+b.title;if(seen.has(k))return false;seen.add(k);return true})
     .forEach(b=>{
+      const isMe=b.playerId===S.myId;
       html+=`<div class="book-card">
         <div class="book-icon-big">📖</div>
         <div class="book-info">
           <div class="book-title">${escHtml(b.title)}</div>
           <div class="book-meta">${b.pEmoji} ${b.pName} · Commencé J${b.startDay}${b.endDay?` · Fini J${b.endDay}`:''}</div>
-          ${!b.endDay&&b.fromBooks?`<button class="book-finish-btn" onclick="finishBook('${b.playerId}','${b.bid}')">✓ Marquer comme lu</button>`:''}
+          ${!b.endDay&&b.fromBooks&&isMe?`<button class="book-finish-btn" onclick="finishBook('${b.playerId}','${b.bid}')">✓ Marquer comme lu</button>`:''}
+          ${b.endDay&&b.fromBooks&&isMe?`<button class="book-finish-btn" onclick="unfinishBook('${b.playerId}','${b.bid}')" style="color:var(--muted)">↩ Remettre en cours</button>`:''}
         </div>
         <div class="book-status ${b.endDay?'done':'reading'}">${b.endDay?'Lu ✓':'En cours'}</div>
       </div>`;
@@ -1394,6 +1497,11 @@ function filterPhotos(playerId){
 async function finishBook(playerId,bid){
   await db.ref(`players/${playerId}/books/${bid}/endDay`).set(S.dayNum);
   toast('📚 Livre terminé ! Bravo !');
+}
+
+async function unfinishBook(playerId,bid){
+  await db.ref(`players/${playerId}/books/${bid}/endDay`).set(null);
+  toast('↩️ Livre remis en cours de lecture', '#ff8800', '#000');
 }
 
 /* ── LIGHTBOX ────────────────────────────────────────────── */
@@ -1447,6 +1555,8 @@ function openSettings(){
 function closeSettings(){
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('modal').classList.remove('open');
+  S.editingDate=null;
+  S.editingDayNum=null;
 }
 
 async function pickPlayerFromModal(id){
